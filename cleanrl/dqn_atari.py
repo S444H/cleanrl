@@ -1,8 +1,6 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/dqn/#dqn_ataripy
-import os
 import random
 import time
-from dataclasses import dataclass
 
 import gymnasium as gym
 import numpy as np
@@ -24,61 +22,50 @@ from cleanrl_utils.atari_wrappers import (
 )
 from cleanrl_utils.buffers import ReplayBuffer
 
+from dataclasses import dataclass, fields
+import os
+
 
 @dataclass
 class Args:
-    exp_name: str = os.path.basename(__file__)[: -len(".py")]
-    """the name of this experiment"""
-    seed: int = 1
-    """seed of the experiment"""
-    torch_deterministic: bool = True
-    """if toggled, `torch.backends.cudnn.deterministic=False`"""
-    cuda: bool = True
-    """if toggled, cuda will be enabled by default"""
-    track: bool = False
-    """if toggled, this experiment will be tracked with Weights and Biases"""
-    wandb_project_name: str = "cleanRL"
-    """the wandb's project name"""
-    wandb_entity: str = None
-    """the entity (team) of wandb's project"""
-    capture_video: bool = False
-    """whether to capture videos of the agent performances (check out `videos` folder)"""
-    save_model: bool = False
-    """whether to save model into the `runs/{run_name}` folder"""
-    upload_model: bool = False
-    """whether to upload the saved model to huggingface"""
-    hf_entity: str = ""
-    """the user or org name of the model repository from the Hugging Face Hub"""
+    exp_name: str = os.path.basename(__file__)[: -len(".py")]  # 实验名称
+    seed: int = 1  # 实验随机种子
+    torch_deterministic: bool = True  # 是否开启 PyTorch 确定性模式
+    cuda: bool = True  # 是否使用 CUDA（GPU）
+    track: bool = False  # 是否使用 Weights & Biases 追踪实验
+    wandb_project_name: str = "cleanRL"  # W&B 项目名称
+    wandb_entity: str = None  # W&B 团队或用户名
+    capture_video: bool = False  # 是否录制智能体运行视频（保存到 videos 文件夹）
+    save_model: bool = False  # 是否保存训练好的模型
+    upload_model: bool = False  # 是否上传模型到 Hugging Face Hub
+    hf_entity: str = ""  # Hugging Face 用户名或组织名
 
-    # Algorithm specific arguments
-    env_id: str = "BreakoutNoFrameskip-v4"
-    """the id of the environment"""
-    total_timesteps: int = 10000000
-    """total timesteps of the experiments"""
-    learning_rate: float = 1e-4
-    """the learning rate of the optimizer"""
-    num_envs: int = 1
-    """the number of parallel game environments"""
-    buffer_size: int = 1000000
-    """the replay memory buffer size"""
-    gamma: float = 0.99
-    """the discount factor gamma"""
-    tau: float = 1.0
-    """the target network update rate"""
-    target_network_frequency: int = 1000
-    """the timesteps it takes to update the target network"""
-    batch_size: int = 32
-    """the batch size of sample from the reply memory"""
-    start_e: float = 1
-    """the starting epsilon for exploration"""
-    end_e: float = 0.01
-    """the ending epsilon for exploration"""
-    exploration_fraction: float = 0.10
-    """the fraction of `total-timesteps` it takes from start-e to go end-e"""
-    learning_starts: int = 80000
-    """timestep to start learning"""
-    train_frequency: int = 4
-    """the frequency of training"""
+    # 算法相关参数
+    env_id: str = "BreakoutNoFrameskip-v4"  # 环境 ID
+    total_timesteps: int = 10000000  # 总训练步数
+    learning_rate: float = 1e-4  # 优化器学习率
+    num_envs: int = 1  # 并行环境数量
+    buffer_size: int = 1000000  # 经验回放缓冲区大小
+    gamma: float = 0.99  # 折扣因子
+    tau: float = 1.0  # 目标网络更新系数（1.0 表示硬更新）
+    target_network_frequency: int = 1000  # 目标网络更新频率（步数）
+    batch_size: int = 32  # 训练批量大小
+    start_e: float = 1  # epsilon-greedy 初始探索率
+    end_e: float = 0.01  # epsilon-greedy 最终探索率
+    exploration_fraction: float = 0.10  # 从 start_e 到 end_e 所占总训练步数比例
+    learning_starts: int = 80000  # 训练开始步数（经验池积累后开始训练）
+    train_frequency: int = 4  # 训练频率（每隔多少步训练一次）
+
+    def print_args(self):
+        """打印当前配置参数"""
+        print("=" * 40)
+        print(f"{'参数名称':<30} | {'值'}")
+        print("-" * 40)
+        for f in fields(self):
+            name = f.name
+            value = getattr(self, name)
+            print(f"{name:<30} | {value}")
+        print("=" * 40)
 
 
 def make_env(env_id, seed, idx, capture_video, run_name):
@@ -187,7 +174,8 @@ if __name__ == "__main__":
     obs, _ = envs.reset(seed=args.seed)
     for global_step in range(args.total_timesteps):
         # ALGO LOGIC: put action logic here
-        epsilon = linear_schedule(args.start_e, args.end_e, args.exploration_fraction * args.total_timesteps, global_step)
+        epsilon = linear_schedule(args.start_e, args.end_e, args.exploration_fraction * args.total_timesteps,
+                                  global_step)
         if random.random() < epsilon:
             actions = np.array([envs.single_action_space.sample() for _ in range(envs.num_envs)])
         else:
