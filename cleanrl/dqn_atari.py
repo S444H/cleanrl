@@ -43,7 +43,7 @@ class Args:
     hf_entity: str = ""  # Hugging Face 用户名或组织名
 
     # 算法相关参数
-    env_id: str = "BreakoutNoFrameskip-v4"  # 环境 ID
+    env_id: str = "BreakoutNoFrameskip-v4"  # 环境 ID,NoFrame方便自己控制帧跳过 (论文)
     total_timesteps: int = 10000000  # 总训练步数
     learning_rate: float = 1e-4  # 优化器学习率
     num_envs: int = 1  # 并行环境数量
