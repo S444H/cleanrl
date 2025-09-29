@@ -47,7 +47,7 @@ class Args:
     total_timesteps: int = 10000000  # 总训练步数
     learning_rate: float = 1e-4  # 优化器学习率
     num_envs: int = 1  # 并行环境数量
-    buffer_size: int = 1000000  # 经验回放缓冲区大小
+    buffer_size: int = 100000  # 经验回放缓冲区大小:1000000
     gamma: float = 0.99  # 折扣因子
     tau: float = 1.0  # 目标网络更新系数（1.0 表示硬更新）
     target_network_frequency: int = 1000  # 目标网络更新频率（步数）
@@ -188,7 +188,7 @@ if __name__ == "__main__":
             actions = torch.argmax(q_values, dim=1).cpu().numpy()
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        # 1轮游戏结束后，把训练数据写入 TensorBoard，以便在训练过程中实时绘制曲线
+        # 每轮游戏结束后，把训练数据写入 TensorBoard，以便在训练过程中实时绘制曲线
         if "final_info" in infos:
             for info in infos["final_info"]:
                 if info and "episode" in info:
