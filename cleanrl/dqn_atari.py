@@ -6,18 +6,20 @@ from dataclasses import dataclass
 
 import gymnasium as gym
 import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import tyro
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter  # TensorBoard 日志写入器，用于训练指标可视化
+
+import tyro  # 现代命令行解析库
 
 from cleanrl_utils.atari_wrappers import (
-    ClipRewardEnv,
+    ClipRewardEnv,  # 将奖励裁剪到[-1, 1] (论文)
     EpisodicLifeEnv,
     FireResetEnv,
-    MaxAndSkipEnv,
+    MaxAndSkipEnv,  # 跳帧并取最大帧 (论文)
     NoopResetEnv,
 )
 from cleanrl_utils.buffers import ReplayBuffer
