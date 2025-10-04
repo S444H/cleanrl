@@ -72,26 +72,42 @@ class Args:
 
 def make_env(env_id, seed, idx, capture_video, run_name):
     def thunk():
+        # 如果启用视频录制，并且这是第一个环境（idx == 0），则进行视频录制
         if capture_video and idx == 0:
+            # 创建环境，设置为“rgb_array”渲染模式，便于录制视频
             env = gym.make(env_id, render_mode="rgb_array")
+            # 使用 RecordVideo wrapper 来录制视频并保存到指定路径
             env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         else:
+            # 否则，仅创建环境
             env = gym.make(env_id)
-        env = gym.wrappers.RecordEpisodeStatistics(env)
 
+        # 为环境添加统计功能，记录每一集的奖励和长度等信息
+        env = gym.wrappers.RecordEpisodeStatistics(env)
+        # 添加随机 "Noop" 重置步骤，在每次环境重置时，随机跳过一定数量的帧
         env = NoopResetEnv(env, noop_max=30)
+        # 每次执行动作时跳过 4 帧，加快训练速度
         env = MaxAndSkipEnv(env, skip=4)
+        # 处理 Atari 游戏的“EpisodicLifeEnv” wrapper，确保每次游戏结束后进行重新初始化
         env = EpisodicLifeEnv(env)
+        # 如果环境包含 "FIRE" 动作，用于某些 Atari 游戏（如 Breakout），则添加 FireResetEnv
         if "FIRE" in env.unwrapped.get_action_meanings():
             env = FireResetEnv(env)
+
+        # 裁剪奖励，使其范围在 [-1, 1] 之间，防止奖励值过大或过小，影响训练效果
         env = ClipRewardEnv(env)
+        # 将观察空间的图像大小调整为 (84, 84)，预处理
         env = gym.wrappers.ResizeObservation(env, (84, 84))
+        # 将图像转为灰度图，去除不必要的颜色信息，减少计算量
         env = gym.wrappers.GrayScaleObservation(env)
+        # 堆叠 4 帧图像作为输入，这有助于智能体捕捉运动信息
         env = gym.wrappers.FrameStack(env, 4)
 
+        # 设置环境的随机种子，确保实验结果的可重复性
         env.action_space.seed(seed)
         return env
 
+    # 返回 thunk 函数，这个函数在被调用时会生成和配置环境
     return thunk
 
 
@@ -188,8 +204,9 @@ if __name__ == "__main__":
             actions = torch.argmax(q_values, dim=1).cpu().numpy()
 
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        # 每轮游戏结束后，把训练数据写入 TensorBoard，以便在训练过程中实时绘制曲线
+        # 每局game结束时，把训练数据写入 TensorBoard，以便在训练过程中实时绘制曲线
         if "final_info" in infos:
+            # print(infos)
             for info in infos["final_info"]:
                 if info and "episode" in info:
                     print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
@@ -214,11 +231,11 @@ if __name__ == "__main__":
                 old_val = q_network(data.observations).gather(1, data.actions).squeeze()
                 loss = F.mse_loss(td_target, old_val)
 
-                # 每 100轮 把相关数据写入 TensorBoard
+                # 每 100步 把相关数据写入 TensorBoard
                 if global_step % 100 == 0:
                     writer.add_scalar("losses/td_loss", loss, global_step)
                     writer.add_scalar("losses/q_values", old_val.mean().item(), global_step)
-                    print("SPS:", int(global_step / (time.time() - start_time)))
+                    # print("SPS:", int(global_step / (time.time() - start_time)))
                     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
                 # optimize the model
@@ -233,7 +250,7 @@ if __name__ == "__main__":
                         args.tau * q_network_param.data + (1.0 - args.tau) * target_network_param.data
                     )
 
-    if args.save_model:  # 默认不保存
+    if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
         torch.save(q_network.state_dict(), model_path)
         print(f"model saved to {model_path}")
