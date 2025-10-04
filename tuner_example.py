@@ -1,4 +1,4 @@
-import optuna
+import optuna  # Optuna 是一个开源的 自动化超参数优化框架
 
 from cleanrl_utils.tuner import Tuner
 
