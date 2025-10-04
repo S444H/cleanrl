@@ -29,7 +29,7 @@ import os
 @dataclass
 class Args:
     exp_name: str = os.path.basename(__file__)[: -len(".py")]  # 实验名称
-    seed: int = 1  # 实验随机种子
+    seed: int = 1
     torch_deterministic: bool = True  # 是否开启 PyTorch 确定性模式
     cuda: bool = True  # 是否使用 CUDA（GPU）
 
