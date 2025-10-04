@@ -74,10 +74,10 @@ def make_env(env_id, seed, idx, capture_video, run_name):
     def thunk():
         # 如果启用视频录制，并且这是第一个环境（idx == 0），则进行视频录制
         if capture_video and idx == 0:
-            # 创建环境，设置为“rgb_array”渲染模式，便于录制视频
+            # 创建环境，设置为“rgb_array”渲染模式，表示输出每一帧的 RGB 图像
             env = gym.make(env_id, render_mode="rgb_array")
-            # 使用 RecordVideo wrapper 来录制视频并保存到指定路径
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+            # 使用 RecordVideo wrapper 来录制视频并保存到指定路径（每回合）
+            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}", name_prefix="dqn-breakoutv4")
         else:
             # 否则，仅创建环境
             env = gym.make(env_id)
@@ -202,9 +202,9 @@ if __name__ == "__main__":
         else:
             q_values = q_network(torch.Tensor(obs).to(device))
             actions = torch.argmax(q_values, dim=1).cpu().numpy()
-
+        # 若回合结束 SyncVectorEnv 内部自动调用 reset()
         next_obs, rewards, terminations, truncations, infos = envs.step(actions)
-        # 每局game结束时，把训练数据写入 TensorBoard，以便在训练过程中实时绘制曲线
+        # 每局game结束时，把训练数据写入 TensorBoard
         if "final_info" in infos:
             # print(infos)
             for info in infos["final_info"]:
@@ -215,6 +215,7 @@ if __name__ == "__main__":
 
         # save data to reply buffer
         real_next_obs = next_obs.copy()
+        # 解除 SyncVectorEnv 自动调用，恢复real_next_obs
         for idx, trunc in enumerate(truncations):
             if trunc:
                 real_next_obs[idx] = infos["final_observation"][idx]
